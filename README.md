@@ -25,6 +25,17 @@ Running
 Maintenance and Tweaks
 ----------------------
 
+### Changing the Screen Resolution
+
+Note: to get a list of supported resolutions, use ./start_vm.sh -?
+
+  1. ./start_vm.sh -s [chosen resolution]
+  2. Press ESC during early boot (before Clover screen) to get to OVMF menu
+  3. Device Manager -> OVMF Platform Configuration -> Change Preferred Resolution for Next Boot -> [chosen resolution]
+  4. Save and reboot
+  5. Make sure it boots without a scrambled screen. If it's scrambled, there's a resolution mismatch between Clover and OVMF.
+
+
 ### Adding a New Screen Resolution
 
 Note: Only the resolutions listed in OVMF platform configuration are valid.
