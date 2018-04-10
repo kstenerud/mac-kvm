@@ -7,7 +7,7 @@ Installing
 
  1. Create High Sierra iso image called HighSierra.iso (or link to it)
  2. Create a hard drive image: qemu-img create -f qcow2 mac_hdd.qcow 128G
- 3. ./start_vm.sh -i
+ 3. ./start_vm.sh -i -s 1024x768
  4. Use VNC (default port 5900) to connect to the installer
  5. Complete the installation
  6. Shut down
