@@ -14,13 +14,26 @@ SCRIPT_HOME=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
 # Default Configuration
 # =====================
 
+DEFAULT_MEMORY=4096
+DEFAULT_SCREEN_RESOLUTION=1024x768
+DEFAULT_VNC_PORT=:0
+DEFAULT_CPU_SMP=4
+DEFAULT_CPU_CORES=2
+
+
+# ========
+# Settings
+# ========
+
+CPU_SMP=UNSET
+CPU_CORES=UNSET
 MEMORY=UNSET
 SCREEN_RESOLUTION=UNSET
-VNC_PORT=:0
+VNC_PORT=UNSET
 INSTALLER_IMAGE=UNSET
 CREATE_NEW_DRIVE_SIZE=UNSET
-VM_DIRECTORY=
-SETTINGS_FILE=
+VM_DIRECTORY=UNSET
+SETTINGS_FILE=UNSET
 
 # Qemu won't start otherwise
 export QEMU_AUDIO_DRV=alsa
@@ -64,17 +77,55 @@ function is_valid_resolution {
     echo "false"
 }
 
-function validate_parameters {
+function apply_defaults {
     if [ "$MEMORY" == "UNSET" ]; then
-        echo "No memory size specified. Use -m to set it for the first time."
-        exit 1
+        MEMORY=$DEFAULT_MEMORY
     fi
     if [ "$SCREEN_RESOLUTION" == "UNSET" ]; then
-        echo "No screen resolution specified. Use -r to set it for the first time."
-        echo "When installing the OS, it's easiest to set resolution to 1024x768."
-        exit 1
+        SCREEN_RESOLUTION=$DEFAULT_SCREEN_RESOLUTION
     fi
+    if [ "$VNC_PORT" == "UNSET" ]; then
+        VNC_PORT=$DEFAULT_VNC_PORT
+    fi
+    if [ "$CPU_SMP" == "UNSET" ]; then
+        CPU_SMP=$DEFAULT_CPU_SMP
+    fi
+    if [ "$CPU_CORES" == "UNSET" ]; then
+        CPU_CORES=$DEFAULT_CPU_CORES
+    fi
+}
 
+function load_settings {
+    if [ -f "$SETTINGS_FILE" ]; then
+        source "$SETTINGS_FILE"
+        if [ "$MEMORY" == "UNSET" ]; then
+            MEMORY=$CONFIG_MEMORY_MB
+        fi
+        if [ "$SCREEN_RESOLUTION" == "UNSET" ]; then
+            SCREEN_RESOLUTION=$CONFIG_SCREEN_RESOLUTION
+        fi
+        if [ "$VNC_PORT" == "UNSET" ]; then
+            VNC_PORT=$CONFIG_VNC_PORT
+        fi
+        if [ "$CPU_SMP" == "UNSET" ]; then
+            CPU_SMP=$CONFIG_CPU_SMP
+        fi
+        if [ "$CPU_CORES" == "UNSET" ]; then
+            CPU_CORES=$CONFIG_CPU_CORES
+        fi
+    fi
+}
+
+function save_settings {
+    echo "" > "$SETTINGS_FILE"
+    echo "export CONFIG_MEMORY_MB=$MEMORY" >> "$SETTINGS_FILE"
+    echo "export CONFIG_SCREEN_RESOLUTION=$SCREEN_RESOLUTION" >> "$SETTINGS_FILE"
+    echo "export CONFIG_VNC_PORT=$VNC_PORT" >> "$SETTINGS_FILE"
+    echo "export CONFIG_CPU_SMP=$CPU_SMP" >> "$SETTINGS_FILE"
+    echo "export CONFIG_CPU_CORES=$CPU_CORES" >> "$SETTINGS_FILE"
+}
+
+function validate_parameters {
     if [ $(is_valid_resolution "$SCREEN_RESOLUTION") != "true" ]; then
         echo "$SCREEN_RESOLUTION is not a valid resolution."
         list_resolutions
@@ -96,24 +147,6 @@ function create_from_template {
     if [ ! -f "$destination_file" ]; then
         cp "$template_file" "$destination_file"
     fi
-}
-
-function load_settings {
-    if [ -f "$SETTINGS_FILE" ]; then
-        source "$SETTINGS_FILE"
-        if [ "$MEMORY" == "UNSET" ]; then
-            MEMORY=$CONFIG_MEMORY_MB
-        fi
-        if [ "$SCREEN_RESOLUTION" == "UNSET" ]; then
-            SCREEN_RESOLUTION=$CONFIG_SCREEN_RESOLUTION
-        fi
-    fi
-}
-
-function save_settings {
-    echo "" > "$SETTINGS_FILE"
-    echo "export CONFIG_MEMORY_MB=$MEMORY" >> "$SETTINGS_FILE"
-    echo "export CONFIG_SCREEN_RESOLUTION=$SCREEN_RESOLUTION" >> "$SETTINGS_FILE"
 }
 
 function setup_vm {
@@ -160,13 +193,15 @@ function show_help {
     echo
     echo "Options:"
     echo "    -?:            Show this help screen."
-    echo "    -m memory:     Change the machine's memory size (in mb) (saved)"
-    echo "    -r resolution: Change the machine's screen resolution (e.g. 1024x768) (saved)"
-    echo "    -v port:       Which vnc port qemu will listen on (default $VNC_PORT)"
+    echo "    -m memory:     Change the machine's memory size (in mb) (default $DEFAULT_MEMORY)"
+    echo "    -c cores:      Number of CPU cores (default $DEFAULT_CPU_CORES)"
+    echo "    -s units:      Number of SMP units (default $DEFAULT_CPU_SMP)"
+    echo "    -r resolution: Change the machine's screen resolution (deault $DEFAULT_SCREEN_RESOLUTION)"
+    echo "    -v port:       Which vnc port qemu will listen on (default $DEFAULT_VNC_PORT)"
     echo "    -i path:       Mount the installer dvd from this path"
-    echo "    -c size:       Create a new vm with a hard drive image of the specified size (e.g. 128G)"
+    echo "    -C size:       Create a new vm with a hard drive image of the specified size (e.g. 128G)"
     echo
-    echo "Some options will be saved to the vm and re-used until changed."
+    echo "Most options will be saved to the vm and re-used until changed."
     echo
     list_resolutions
 }
@@ -188,6 +223,8 @@ function run_vm {
     vm_dir="$VM_DIRECTORY"
     firmware_dir="$SCRIPT_HOME"
     memory_kb=$MEMORY
+    cpu_cores=$CPU_CORES
+    cpu_smp=$CPU_SMP
     screen_res=$SCREEN_RESOLUTION
     vnc_port=$VNC_PORT
     installer_image="$INSTALLER_IMAGE"
@@ -197,7 +234,7 @@ function run_vm {
     network_settings="user,id=user.0,hostfwd=tcp::5901-:5900 -device e1000-82545em,netdev=user.0"
     # network_settings="tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000-82545em,netdev=net0,id=net0,mac=52:54:00:c9:18:27"
 
-    echo "Running mac vm at $vm_dir with $memory_kb mb, screen $screen_res, vnc port $vnc_port"
+    echo "Running mac vm at $vm_dir with $memory_kb mb, $cpu_cores cores, smp $cpu_smp, screen $screen_res, vnc port $vnc_port"
     echo
     echo "REMEMBER: OVMF must also be set to $screen_res or else you'll get a garbled screen!"
     echo "          Steps to change OVMF resolution:"
@@ -216,7 +253,7 @@ function run_vm {
         -cpu Penryn,kvm=on,vendor=GenuineIntel,+invtsc,vmware-cpuid-freq=on,${cpu_performance_options} \
         -machine pc-q35-2.9 \
         -smbios type=2 \
-        -smp 4,cores=2 \
+        -smp $cpu_smp,cores=$cpu_cores \
         -usb -device usb-kbd -device usb-tablet \
         -netdev ${network_settings} \
         -vnc $vnc_port \
@@ -238,7 +275,7 @@ function run_vm {
 # =======
 
 OPTIND=1
-while getopts "?m:r:v:i:c:" opt; do
+while getopts "?m:c:s:r:v:i:C:" opt; do
     case "$opt" in
     \?)
         show_help
@@ -246,13 +283,17 @@ while getopts "?m:r:v:i:c:" opt; do
         ;;
     m)  MEMORY=$OPTARG
         ;;
+    c)  CPU_CORES=$OPTARG
+        ;;
+    s)  CPU_SMP=$OPTARG
+        ;;
     r)  SCREEN_RESOLUTION=$OPTARG
         ;;
     v)  VNC_PORT=$OPTARG
         ;;
     i)  INSTALLER_IMAGE=$OPTARG
         ;;
-    c)  CREATE_NEW_DRIVE_SIZE=$OPTARG
+    C)  CREATE_NEW_DRIVE_SIZE=$OPTARG
         ;;
     esac
 done
@@ -276,6 +317,7 @@ SETTINGS_FILE="${VM_DIRECTORY}/settings.sh"
 set -eu
 
 load_settings
+apply_defaults
 validate_parameters
 setup_vm
 save_settings

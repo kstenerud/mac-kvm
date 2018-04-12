@@ -9,10 +9,10 @@ You can connect to QEMU's VNC server on port 5900, or to the virtual mac's scree
 Creating a New Virtual Mac
 --------------------------
 
-The following will create a new mac vm in /path/to/vm/dir containing a 64 gb hdd image, with 4gb RAM and a 1024x768 display.
+The following will create a new mac vm in /path/to/vm/dir containing a 64 gb hdd image.
 If the directory doesn't exist yet, it will be created.
 
-  1. start_macos_vm.sh -i /path/to/HighSierra.iso -c 64g -r 1024x768 -m 4096 /path/to/vm/dir
+  1. start_macos_vm.sh -i /path/to/HighSierra.iso -c 64g /path/to/vm/dir
   2. Use VNC (default port 5900) to connect to the installer via QEMU's VNC service
   3. Run Disk Utility
   4. Select View (top left corner gadget) -> Show All Devices
@@ -21,7 +21,7 @@ If the directory doesn't exist yet, it will be created.
   7. Quit Disk Utility
   8. Run the OS installer
 
-The script will save most settings, so after creating and installing the vm, you can call:
+After creating and installing the vm, you don't need the installer anymore, so you can just run it like this:
 
     start_macos_vm.sh /path/to/vm/dir
 
@@ -35,6 +35,7 @@ Running
 
 The script expects a hdd image called mac_hdd.qcow in the vm container directory, which it can create if you use the -c option.
 All other files it needs will be added to the container directory automatically.
+Settings will be saved to the vm directory.
 
 
 ### Notes About Screen Resolutions
