@@ -14,12 +14,13 @@ SCRIPT_HOME=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
 # Default Configuration
 # =====================
 
-MEMORY=3072
-SCREEN_RESOLUTION=1600x900
+MEMORY=UNSET
+SCREEN_RESOLUTION=UNSET
 VNC_PORT=:0
 INSTALLER_IMAGE=UNSET
 CREATE_NEW_DRIVE_SIZE=UNSET
 VM_DIRECTORY=
+SETTINGS_FILE=
 
 # Qemu won't start otherwise
 export QEMU_AUDIO_DRV=alsa
@@ -64,6 +65,16 @@ function is_valid_resolution {
 }
 
 function validate_parameters {
+    if [ "$MEMORY" == "UNSET" ]; then
+        echo "No memory size specified. Use -m to set it for the first time."
+        exit 1
+    fi
+    if [ "$SCREEN_RESOLUTION" == "UNSET" ]; then
+        echo "No screen resolution specified. Use -r to set it for the first time."
+        echo "When installing the OS, it's easiest to set resolution to 1024x768."
+        exit 1
+    fi
+
     if [ $(is_valid_resolution "$SCREEN_RESOLUTION") != "true" ]; then
         echo "$SCREEN_RESOLUTION is not a valid resolution."
         list_resolutions
@@ -85,6 +96,24 @@ function create_from_template {
     if [ ! -f "$destination_file" ]; then
         cp "$template_file" "$destination_file"
     fi
+}
+
+function load_settings {
+    if [ -f "$SETTINGS_FILE" ]; then
+        source "$SETTINGS_FILE"
+        if [ "$MEMORY" == "UNSET" ]; then
+            MEMORY=$CONFIG_MEMORY_MB
+        fi
+        if [ "$SCREEN_RESOLUTION" == "UNSET" ]; then
+            SCREEN_RESOLUTION=$CONFIG_SCREEN_RESOLUTION
+        fi
+    fi
+}
+
+function save_settings {
+    echo "" > "$SETTINGS_FILE"
+    echo "export CONFIG_MEMORY_MB=$MEMORY" >> "$SETTINGS_FILE"
+    echo "export CONFIG_SCREEN_RESOLUTION=$SCREEN_RESOLUTION" >> "$SETTINGS_FILE"
 }
 
 function setup_vm {
@@ -113,7 +142,8 @@ function setup_vm {
 
     if [ ! -f "$mac_hdd_image" ]; then
         echo "HDD image not found: $mac_hdd_image"
-        echo "Are you sure this is a vm directory?"
+        echo "Are you sure $(dirname $mac_hdd_image) is a vm directory?"
+        echo "To create a new vm, use the -c option."
         exit 1
     fi
 
@@ -126,15 +156,17 @@ function show_help {
     echo
     echo "Usage: $0 [options] <vm directory>"
     echo
-    echo "Where vm directory is a directory containing your hard drive image called mac_hdd.qcow"
+    echo "Where <vm directory> is a directory to contain the vm files"
     echo
     echo "Options:"
     echo "    -?:            Show this help screen."
-    echo "    -m memory:     How much memory to allocate in kb (default $MEMORY)"
-    echo "    -r resolution: What screen resolution to use (default $SCREEN_RESOLUTION)"
+    echo "    -m memory:     Change the machine's memory size (in mb) (saved)"
+    echo "    -r resolution: Change the machine's screen resolution (e.g. 1024x768) (saved)"
     echo "    -v port:       Which vnc port qemu will listen on (default $VNC_PORT)"
     echo "    -i path:       Mount the installer dvd from this path"
-    echo "    -c size:       Create a new hard drive image of the specified size (e.g. 128G)"
+    echo "    -c size:       Create a new vm with a hard drive image of the specified size (e.g. 128G)"
+    echo
+    echo "Some options will be saved to the vm and re-used until changed."
     echo
     list_resolutions
 }
@@ -165,11 +197,12 @@ function run_vm {
     network_settings="user,id=user.0,hostfwd=tcp::5901-:5900 -device e1000-82545em,netdev=user.0"
     # network_settings="tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000-82545em,netdev=net0,id=net0,mac=52:54:00:c9:18:27"
 
-    echo "Running mac vm $mac_hdd_image with memory $memory_kb, screen $screen_res, vnc port $vnc_port"
+    echo "Running mac vm at $vm_dir with $memory_kb mb, screen $screen_res, vnc port $vnc_port"
     echo
-    echo "IMPORTANT: Remember that OVMF must also be set to $screen_res or else you'll get a garbled screen!"
-    echo "           Press ESC during first boot splash screen (before Clover) to get into OVMF, then:"
-    echo "           Device Manager -> OVMF Platform Configuration -> Change Preferred Resolution for Next Boot -> $screen_res"
+    echo "REMEMBER: OVMF must also be set to $screen_res or else you'll get a garbled screen!"
+    echo "          Steps to change OVMF resolution:"
+    echo "          1. Press ESC during first boot splash screen (before Clover) to get into OVMF"
+    echo "          2. Device Manager -> OVMF Platform Configuration -> Change Preferred Resolution for Next Boot -> $screen_res"
 
     if [ "$installer_image" != "UNSET" ]; then
         installer_options="-device ide-drive,bus=ide.0,drive=MacDVD -drive id=MacDVD,if=none,snapshot=on,media=cdrom,file=$installer_image"
@@ -205,7 +238,7 @@ function run_vm {
 # =======
 
 OPTIND=1
-while getopts "?m:s:v:i:c:" opt; do
+while getopts "?m:r:v:i:c:" opt; do
     case "$opt" in
     \?)
         show_help
@@ -213,7 +246,7 @@ while getopts "?m:s:v:i:c:" opt; do
         ;;
     m)  MEMORY=$OPTARG
         ;;
-    s)  SCREEN_RESOLUTION=$OPTARG
+    r)  SCREEN_RESOLUTION=$OPTARG
         ;;
     v)  VNC_PORT=$OPTARG
         ;;
@@ -232,6 +265,8 @@ if [[ $# -ne 1 ]]; then
 fi
 
 VM_DIRECTORY=$1
+SETTINGS_FILE="${VM_DIRECTORY}/settings.sh"
+
 
 
 # =======
@@ -240,7 +275,9 @@ VM_DIRECTORY=$1
 
 set -eu
 
+load_settings
 validate_parameters
 setup_vm
+save_settings
 set_resolution $SCREEN_RESOLUTION
 run_vm
