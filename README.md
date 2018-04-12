@@ -12,7 +12,7 @@ Creating a New Virtual Mac
 The following will create a new mac vm in /path/to/vm/dir containing a 64 gb hdd image, with 4gb RAM and a 1024x768 display.
 If the directory doesn't exist yet, it will be created.
 
-  1. Create a new vm 1024x768 with installer: ./start_vm.sh -i /path/to/HighSierra.iso -c 64g -r 1024x768 -m 4096 /path/to/vm/dir
+  1. start_macos_vm.sh -i /path/to/HighSierra.iso -c 64g -r 1024x768 -m 4096 /path/to/vm/dir
   2. Use VNC (default port 5900) to connect to the installer via QEMU's VNC service
   3. Run Disk Utility
   4. Select View (top left corner gadget) -> Show All Devices
@@ -23,15 +23,15 @@ If the directory doesn't exist yet, it will be created.
 
 The script will save most settings, so after creating and installing the vm, you can call:
 
-    ./start_vm.sh /path/to/vm/dir
+    start_macos_vm.sh /path/to/vm/dir
 
 
 
 Running
 -------
 
-    start_vm.sh -?
-    start_vm.sh [options] /path/to/mac/vm/container/directory &
+    start_macos_vm.sh -?
+    start_macos_vm.sh [options] /path/to/mac/vm/container/directory &
 
 The script expects a hdd image called mac_hdd.qcow in the vm container directory, which it can create if you use the -c option.
 All other files it needs will be added to the container directory automatically.
@@ -41,7 +41,7 @@ All other files it needs will be added to the container directory automatically.
 
 In order for the screen to display correctly, both OVMF and Clover must be in agreement as to what resolution to show. This script can handle Clover, but you must set the resolution in OVMF yourself:
 
-  1. ./start_vm.sh [options] -r [chosen resolution] /path/to/mac/vm/container/directory
+  1. start_macos_vm.sh [options] -r [chosen resolution] /path/to/mac/vm/container/directory
   2. Press ESC during early boot (before Clover screen) to get to the OVMF menu
   3. Navigate: Device Manager -> OVMF Platform Configuration -> Change Preferred Resolution for Next Boot -> [chosen resolution]
   4. Save and reboot
@@ -76,6 +76,6 @@ Most of this is shamelessly stolen from https://github.com/kholia/OSX-KVM
 License
 -------
 
-start_vm.sh is released under MIT license https://opensource.org/licenses/MIT
+start_macos_vm.sh is released under MIT license https://opensource.org/licenses/MIT
 
 Everything else is someone else's work, and may have different licensing terms.
