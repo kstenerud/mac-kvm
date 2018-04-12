@@ -6,30 +6,20 @@ You can connect to QEMU's VNC server on port 5900, or to the virtual mac's scree
 
 
 
-Assumptions
------------
+Creating a New Mac
+------------------
 
-This script makes certain assumptions about your environment:
+The following will create a new mac vm in /path/to/vm/dir/to/create containing a 64 gb hdd image.
+If the directory doesn't exist yet, it will be created.
 
- 1. All disk images are in the current directory (or symlinked from there).
- 2. The hard drive image is called mac_hdd.qcow
- 3. The install disk is called HighSierra.iso
-
-
-
-Installing
-----------
-
-  1. Create High Sierra iso image called HighSierra.iso (or link to it)
-  2. Create a hard drive image: qemu-img create -f qcow2 mac_hdd.qcow 128G
-  3. Start the VM in installer mode with 1024x768 screen size: ./start_vm.sh -i -s 1024x768
-  4. Use VNC (default port 5900) to connect to the installer via qemu's VNC service
-  5. Run Disk Utility
-  6. Show all drives (top left corner gadget)
-  7. Select your virtual drive
-  8. Erase your virtual drive, naming it "MacOS" (Clover's config.plist is set to boot "MacOS" by default)
-  9. Quit Disk Utility
- 10. Run the OS installer
+  1. Start a new vm at 1024x768 in install mode: ./start_vm.sh -i /path/to/HighSierra.iso -c 64g -s 1024x768 /path/to/vm/dir/to/create
+  2. Use VNC (default port 5900) to connect to the installer via QEMU's VNC service
+  3. Run Disk Utility
+  4. Select View (top left corner gadget) -> Show All Devices
+  5. Select your virtual drive (bottom QEMU HARDDISK MEDIA drive)
+  6. Erase your virtual drive, naming it "MacOS" (Clover's config.plist is set to boot "MacOS" by default)
+  7. Quit Disk Utility
+  8. Run the OS installer
 
 
 
@@ -37,14 +27,17 @@ Running
 -------
 
     start_vm.sh -?
-    start_vm.sh <options> &
+    start_vm.sh [options] /path/to/mac/vm/container/directory &
+
+The script expects a hdd image called mac_hdd.qcow in the vm container directory, which it can create automatically if you use the -c option.
+All other files it needs will be added to the container directory automatically.
 
 
 ### Notes About Screen Resolutions
 
 In order for the screen to display correctly, both OVMF and Clover must be in agreement as to what resolution to show. This script can handle Clover, but you must set the resolution in OVMF yourself:
 
-  1. ./start_vm.sh -s [chosen resolution]
+  1. ./start_vm.sh [options] -s [chosen resolution] /path/to/mac/vm/container/directory
   2. Press ESC during early boot (before Clover screen) to get to the OVMF menu
   3. Navigate: Device Manager -> OVMF Platform Configuration -> Change Preferred Resolution for Next Boot -> [chosen resolution]
   4. Save and reboot
