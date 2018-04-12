@@ -67,6 +67,15 @@ Maintenance and Tweaks
 
 
 
+Troubleshooting
+---------------
+
+### Graphics
+
+Some apps may not display properly because they try to use hardware acceleration (for examle, Chrome and Skype). Try to disable hardware acceleration in programs if you can  (Chrome's hardware acceleration setting is under advanced settings, but it's difficult to get to because the settings page uses hardware acceleration :P).
+
+
+
 Notes
 -----
 
