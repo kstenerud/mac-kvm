@@ -1,16 +1,35 @@
 High Sierra under KVM
 =====================
 
+This script sets up QEMU to boot a MacOS High Sierra install disk or hard drive.
+You can connect to QEMU's VNC server on port 5900, or to the virtual mac's screen sharing server (if enabled) on forwarded port 5901.
+
+
+
+Assumptions
+-----------
+
+This script makes certain assumptions about your environment:
+
+ 1. All disk images are in the current directory (or symlinked from there).
+ 2. The hard drive image is called mac_hdd.qcow
+ 3. The install disk is called HighSierra.iso
+
+
 
 Installing
 ----------
 
- 1. Create High Sierra iso image called HighSierra.iso (or link to it)
- 2. Create a hard drive image: qemu-img create -f qcow2 mac_hdd.qcow 128G
- 3. ./start_vm.sh -i -s 1024x768
- 4. Use VNC (default port 5900) to connect to the installer
- 5. Complete the installation
- 6. Shut down
+  1. Create High Sierra iso image called HighSierra.iso (or link to it)
+  2. Create a hard drive image: qemu-img create -f qcow2 mac_hdd.qcow 128G
+  3. Start the VM in installer mode with 1024x768 screen size: ./start_vm.sh -i -s 1024x768
+  4. Use VNC (default port 5900) to connect to the installer via qemu's VNC service
+  5. Run Disk Utility
+  6. Show all drives (top left corner gadget)
+  7. Select your virtual drive
+  8. Erase your virtual drive, naming it "MacOS" (Clover's config.plist is set to boot "MacOS" by default)
+  9. Quit Disk Utility
+ 10. Run the OS installer
 
 
 
@@ -21,49 +40,25 @@ Running
     start_vm.sh <options> &
 
 
+### Notes About Screen Resolutions
+
+In order for the screen to display correctly, both OVMF and Clover must be in agreement as to what resolution to show. This script can handle Clover, but you must set the resolution in OVMF yourself:
+
+  1. ./start_vm.sh -s [chosen resolution]
+  2. Press ESC during early boot (before Clover screen) to get to the OVMF menu
+  3. Navigate: Device Manager -> OVMF Platform Configuration -> Change Preferred Resolution for Next Boot -> [chosen resolution]
+  4. Save and reboot
+  5. Make sure it boots properly. If the screen is garbled, there's a resolution mismatch between Clover and OVMF.
+
+
 
 Maintenance and Tweaks
 ----------------------
-
-### Changing the Screen Resolution
-
-Note: to get a list of supported resolutions, use ./start_vm.sh -?
-
-  1. ./start_vm.sh -s [chosen resolution]
-  2. Press ESC during early boot (before Clover screen) to get to OVMF menu
-  3. Device Manager -> OVMF Platform Configuration -> Change Preferred Resolution for Next Boot -> [chosen resolution]
-  4. Save and reboot
-  5. Make sure it boots without a scrambled screen. If it's scrambled, there's a resolution mismatch between Clover and OVMF.
-
-
-### Adding a New Screen Resolution
-
-Note: Only the resolutions listed in OVMF platform configuration are valid.
-
-  1. cp Clover1024x768.qcow Clover[new resolution].qcow
-  2. ./start_vm.sh -c -s 1024x768
-  3. Press ESC during early boot (before Clover screen) to get to OVMF menu
-  4. Device Manager -> OVMF Platform Configuration -> Change Preferred Resolution for Next Boot -> 1024x768
-  5. Save and reboot
-  6. Boot, log in to the OS, and start a terminal
-  7. sudo mkdir /Volumes/efi
-  8. sudo mount -t msdos /dev/disk0s1 /Volumes/efi
-  9. sudo vi /Volumes/efi/EFI/CLOVER/config.plist
- 10. Change the resolution from 1024x768 to your new resolution
- 11. Save the file
- 12. Shutdown
- 13. ./start_vm.sh -s [new resolution]
- 14. Press ESC during early boot (before Clover screen) to get to OVMF menu
- 15. Device Manager -> OVMF Platform Configuration -> Change Preferred Resolution for Next Boot -> [new resolution]
- 16. Save and reboot
- 17. Make sure it boots without a scrambled screen. If it's scrambled, there's a resolution mismatch between Clover and OVMF.
-
 
 
 ### Clearing Free Space on the Mac Guest
 
     diskutil secureErase freespace 0 /Volumes/MacOS
-
 
 
 ### Compressing a QCOW Image on the Host
