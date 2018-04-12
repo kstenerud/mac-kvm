@@ -169,14 +169,14 @@ function setup_vm {
 
     if [ ! -d "$vm_dir" ]; then
         echo "No such directory: $vm_dir"
-        echo "If you want to create a new vm, use the -c option."
+        echo "If you want to create a new vm, use the -C option."
         exit 1
     fi
 
     if [ ! -f "$mac_hdd_image" ]; then
         echo "HDD image not found: $mac_hdd_image"
         echo "Are you sure $(dirname $mac_hdd_image) is a vm directory?"
-        echo "To create a new vm, use the -c option."
+        echo "To create a new vm, use the -C option."
         exit 1
     fi
 
@@ -193,15 +193,15 @@ function show_help {
     echo
     echo "Options:"
     echo "    -?:            Show this help screen."
-    echo "    -m memory:     Change the machine's memory size (in mb) (default $DEFAULT_MEMORY)"
-    echo "    -c cores:      Number of CPU cores (default $DEFAULT_CPU_CORES)"
-    echo "    -s units:      Number of SMP units (default $DEFAULT_CPU_SMP)"
-    echo "    -r resolution: Change the machine's screen resolution (deault $DEFAULT_SCREEN_RESOLUTION)"
-    echo "    -v port:       Which vnc port qemu will listen on (default $DEFAULT_VNC_PORT)"
+    echo "    -m memory:     Set the machine's memory size (in mb) (default $DEFAULT_MEMORY)"
+    echo "    -c cores:      Set the number of CPU cores (default $DEFAULT_CPU_CORES)"
+    echo "    -s units:      Set the number of SMP units (default $DEFAULT_CPU_SMP)"
+    echo "    -r resolution: Set the machine's screen resolution (deault $DEFAULT_SCREEN_RESOLUTION)"
+    echo "    -v port:       Set the vnc port qemu will listen on (default $DEFAULT_VNC_PORT)"
     echo "    -i path:       Mount the installer dvd from this path"
     echo "    -C size:       Create a new vm with a hard drive image of the specified size (e.g. 128G)"
     echo
-    echo "Most options will be saved to the vm and re-used until changed."
+    echo "Machine configuration options will be saved to the vm and re-used until changed."
     echo
     list_resolutions
 }
